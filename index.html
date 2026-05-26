@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ゲーム一覧</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #14161c;
+    color: #eaeef5;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+  h1 {
+    font-size: 1.8rem;
+    margin: 8px 0 24px;
+    letter-spacing: 0.1em;
+  }
+  .list {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #242832;
+    border-radius: 14px;
+    padding: 18px 20px;
+    min-height: 80px;
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.08s, background 0.15s;
+  }
+  .card:active { transform: scale(0.98); background: #2c3140; }
+  .card .icon {
+    font-size: 2.2rem;
+    width: 56px;
+    text-align: center;
+  }
+  .card .body { flex: 1; }
+  .card .name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 2px;
+  }
+  .card .desc {
+    font-size: 0.85rem;
+    color: #9aa3b2;
+  }
+  .card .arrow {
+    color: #6b7280;
+    font-size: 1.4rem;
+  }
+  footer {
+    margin-top: 32px;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+</style>
+</head>
+<body>
+  <h1>★ ゲーム一覧 ★</h1>
+  <div class="list">
+    <a class="card" href="./shooting-game/">
+      <div class="icon">🚀</div>
+      <div class="body">
+        <div class="name">シューティングゲーム</div>
+        <div class="desc">タップ&ドラッグで敵をやっつけよう</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+    <a class="card" href="./samegame/">
+      <div class="icon">🟦</div>
+      <div class="body">
+        <div class="name">さめがめ</div>
+        <div class="desc">同じ色のブロックを消していくパズル</div>
+      </div>
+      <div class="arrow">›</div>
+    </a>
+  </div>
+  <footer>made with vanilla JS</footer>
+</body>
+</html>
