@@ -212,7 +212,7 @@
 
 <!-- 結果画面 -->
 <section id="result-screen" class="screen">
-  <h1>ゲーム終了</h1>
+  <h1 id="result-title">ゲーム終了</h1>
   <div class="result-new" id="result-new"></div>
   <div class="result-score" id="result-score">0</div>
   <div class="result-detail" id="result-detail"></div>
@@ -240,6 +240,7 @@
   const resultScoreEl = document.getElementById('result-score');
   const resultDetailEl = document.getElementById('result-detail');
   const resultNewEl = document.getElementById('result-new');
+  const resultTitleEl = document.getElementById('result-title');
 
   let board = [];          // board[y][x] = 1..4 or 0
   let cellEls = [];        // cellEls[y][x] = DOM
@@ -454,6 +455,8 @@
     const isNew = score > prev;
     if (isNew) setHiscore(score);
 
+    resultTitleEl.textContent = remaining === 0 ? '★ パーフェクト! ★' : 'ゲーム終了';
+    resultTitleEl.style.color = remaining === 0 ? '#06d6a0' : '';
     resultScoreEl.textContent = score;
     resultNewEl.textContent = isNew ? '★ ハイスコア更新! ★' : '';
     let detail = `のこり ${remaining}個`;
