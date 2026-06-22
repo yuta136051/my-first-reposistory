@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<title>さめがめ</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #1a1d24;
+    color: #eaeef5;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 12px;
+    padding-top: env(safe-area-inset-top, 12px);
+  }
+  .screen {
+    width: 100%;
+    max-width: 480px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .screen.active { display: flex; }
+
+  h1 {
+    font-size: 2rem;
+    margin: 16px 0 4px;
+    letter-spacing: 0.1em;
+  }
+  .subtitle {
+    color: #9aa3b2;
+    font-size: 0.9rem;
+    margin: 0 0 8px;
+  }
+  .rules {
+    background: #242832;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #cfd5e0;
+    width: 100%;
+  }
+  .rules b { color: #ffd166; }
+
+  button {
+    font: inherit;
+    background: #4a7cff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 160px;
+    min-height: 48px;
+    transition: transform 0.05s, background 0.15s;
+  }
+  button:active { transform: scale(0.96); background: #3a66d8; }
+  button.secondary { background: #444a58; }
+  button.secondary:active { background: #353a45; }
+
+  .hiscore-display {
+    font-size: 1rem;
+    color: #ffd166;
+  }
+
+  /* Game screen */
+  .status {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+  .status .box {
+    background: #242832;
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .status .label {
+    display: block;
+    color: #9aa3b2;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+  }
+  .status .value {
+    font-weight: bold;
+    font-size: 1rem;
+    color: #fff;
+  }
+
+  .preview {
+    height: 1.6em;
+    font-size: 0.95rem;
+    color: #ffd166;
+    text-align: center;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 3px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #14161c;
+    border-radius: 8px;
+    padding: 6px;
+  }
+  .cell {
+    border-radius: 6px;
+    transition: transform 0.12s, box-shadow 0.12s, opacity 0.18s;
+    box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .cell.empty {
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .cell.c1 { background: #ef476f; }
+  .cell.c2 { background: #4a8cff; }
+  .cell.c3 { background: #ffd166; }
+  .cell.c4 { background: #06d6a0; }
+  .cell.selected {
+    transform: scale(0.85);
+    box-shadow: 0 0 0 2px #fff, inset 0 -3px 0 rgba(0,0,0,0.25);
+    animation: pulse 0.7s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    from { filter: brightness(1.0); }
+    to   { filter: brightness(1.3); }
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+  .controls button { min-width: 0; flex: 1; padding: 12px 14px; font-size: 0.95rem; }
+
+  /* Result screen */
+  .result-score {
+    font-size: 2.6rem;
+    font-weight: bold;
+    color: #ffd166;
+    margin: 8px 0;
+  }
+  .result-new {
+    color: #06d6a0;
+    font-weight: bold;
+    font-size: 1.1rem;
+    min-height: 1.4em;
+  }
+  .result-detail {
+    color: #cfd5e0;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- タイトル画面 -->
+<section id="title-screen" class="screen active">
+  <h1>★ さめがめ ★</h1>
+  <p class="subtitle">タップで遊ぶパズルゲーム</p>
+  <div class="rules">
+    <b>あそびかた</b><br>
+    ・同じ色のブロックが <b>2個以上つながった</b> 場所をタップすると選択されます。<br>
+    ・もう一度タップすると消えて、上のブロックが落ちてきます。<br>
+    ・空になった列は左に詰まります。<br>
+    ・消した数を n とすると <b>n×(n−1)</b> 点。たくさん消すほど高得点!<br>
+    ・全部消すと <b>+1000点</b> ボーナス。
+  </div>
+  <div class="hiscore-display">ハイスコア: <span id="title-hiscore">0</span></div>
+  <button id="start-btn">スタート</button>
+</section>
+
+<!-- ゲーム画面 -->
+<section id="game-screen" class="screen">
+  <div class="status">
+    <div class="box"><span class="label">スコア</span><span class="value" id="score">0</span></div>
+    <div class="box"><span class="label">のこり</span><span class="value" id="remaining">100</span></div>
+    <div class="box"><span class="label">ハイスコア</span><span class="value" id="game-hiscore">0</span></div>
+  </div>
+  <div class="preview" id="preview">同じ色のかたまりをタップ</div>
+  <div class="board" id="board"></div>
+  <div class="controls">
+    <button id="reset-btn" class="secondary">リセット</button>
+    <button id="quit-btn" class="secondary">やめる</button>
+  </div>
+</section>
+
+<!-- 結果画面 -->
+<section id="result-screen" class="screen">
+  <h1 id="result-title">ゲーム終了</h1>
+  <div class="result-new" id="result-new"></div>
+  <div class="result-score" id="result-score">0</div>
+  <div class="result-detail" id="result-detail"></div>
+  <div class="controls">
+    <button id="again-btn">もう一度</button>
+    <button id="totitle-btn" class="secondary">タイトルへ</button>
+  </div>
+</section>
+
+<script>
+(function() {
+  'use strict';
+
+  const COLS = 10;
+  const ROWS = 10;
+  const COLORS = 4;
+  const HISCORE_KEY = 'samegame_hiscore';
+
+  const boardEl = document.getElementById('board');
+  const scoreEl = document.getElementById('score');
+  const remainingEl = document.getElementById('remaining');
+  const gameHiscoreEl = document.getElementById('game-hiscore');
+  const titleHiscoreEl = document.getElementById('title-hiscore');
+  const previewEl = document.getElementById('preview');
+  const resultScoreEl = document.getElementById('result-score');
+  const resultDetailEl = document.getElementById('result-detail');
+  const resultNewEl = document.getElementById('result-new');
+  const resultTitleEl = document.getElementById('result-title');
+
+  let board = [];          // board[y][x] = 1..4 or 0
+  let cellEls = [];        // cellEls[y][x] = DOM
+  let score = 0;
+  let selectedGroup = null;  // array of [x,y]
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function getHiscore() {
+    const v = parseInt(localStorage.getItem(HISCORE_KEY) || '0', 10);
+    return isNaN(v) ? 0 : v;
+  }
+  function setHiscore(v) {
+    localStorage.setItem(HISCORE_KEY, String(v));
+  }
+
+  function initBoard() {
+    board = [];
+    for (let y = 0; y < ROWS; y++) {
+      const row = [];
+      for (let x = 0; x < COLS; x++) {
+        row.push(1 + Math.floor(Math.random() * COLORS));
+      }
+      board.push(row);
+    }
+  }
+
+  function buildDom() {
+    boardEl.innerHTML = '';
+    cellEls = [];
+    for (let y = 0; y < ROWS; y++) {
+      const row = [];
+      for (let x = 0; x < COLS; x++) {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        div.dataset.x = x;
+        div.dataset.y = y;
+        div.addEventListener('click', onCellClick);
+        boardEl.appendChild(div);
+        row.push(div);
+      }
+      cellEls.push(row);
+    }
+  }
+
+  function renderBoard() {
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const c = board[y][x];
+        const el = cellEls[y][x];
+        el.className = 'cell ' + (c ? 'c' + c : 'empty');
+      }
+    }
+  }
+
+  function findGroup(sx, sy) {
+    const color = board[sy][sx];
+    if (!color) return [];
+    const visited = Array.from({length: ROWS}, () => new Array(COLS).fill(false));
+    const stack = [[sx, sy]];
+    const group = [];
+    while (stack.length) {
+      const [x, y] = stack.pop();
+      if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
+      if (visited[y][x]) continue;
+      if (board[y][x] !== color) continue;
+      visited[y][x] = true;
+      group.push([x, y]);
+      stack.push([x+1, y], [x-1, y], [x, y+1], [x, y-1]);
+    }
+    return group;
+  }
+
+  function clearSelection() {
+    if (!selectedGroup) return;
+    for (const [x, y] of selectedGroup) {
+      cellEls[y][x].classList.remove('selected');
+    }
+    selectedGroup = null;
+    previewEl.textContent = '同じ色のかたまりをタップ';
+  }
+
+  function showSelection(group) {
+    selectedGroup = group;
+    for (const [x, y] of group) {
+      cellEls[y][x].classList.add('selected');
+    }
+    const n = group.length;
+    previewEl.textContent = `${n}個 → ${n * (n - 1)}点`;
+  }
+
+  function sameGroup(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    const key = ([x, y]) => x + ',' + y;
+    const set = new Set(a.map(key));
+    return b.every(p => set.has(key(p)));
+  }
+
+  function onCellClick(e) {
+    const x = parseInt(e.currentTarget.dataset.x, 10);
+    const y = parseInt(e.currentTarget.dataset.y, 10);
+    if (!board[y][x]) {
+      clearSelection();
+      return;
+    }
+    const group = findGroup(x, y);
+    if (group.length < 2) {
+      clearSelection();
+      return;
+    }
+    if (selectedGroup && sameGroup(group, selectedGroup)) {
+      removeGroup(group);
+      applyGravity();
+      compactColumns();
+      renderBoard();
+      selectedGroup = null;
+      updateStatus();
+      previewEl.textContent = '同じ色のかたまりをタップ';
+      if (isGameOver()) {
+        setTimeout(endGame, 350);
+      }
+    } else {
+      clearSelection();
+      showSelection(group);
+    }
+  }
+
+  function removeGroup(group) {
+    const n = group.length;
+    score += n * (n - 1);
+    for (const [x, y] of group) {
+      board[y][x] = 0;
+    }
+  }
+
+  function applyGravity() {
+    for (let x = 0; x < COLS; x++) {
+      let write = ROWS - 1;
+      for (let y = ROWS - 1; y >= 0; y--) {
+        if (board[y][x]) {
+          board[write][x] = board[y][x];
+          if (write !== y) board[y][x] = 0;
+          write--;
+        }
+      }
+      for (let y = write; y >= 0; y--) {
+        board[y][x] = 0;
+      }
+    }
+  }
+
+  function compactColumns() {
+    let write = 0;
+    for (let x = 0; x < COLS; x++) {
+      // 列が空かチェック
+      let empty = true;
+      for (let y = 0; y < ROWS; y++) {
+        if (board[y][x]) { empty = false; break; }
+      }
+      if (!empty) {
+        if (write !== x) {
+          for (let y = 0; y < ROWS; y++) {
+            board[y][write] = board[y][x];
+            board[y][x] = 0;
+          }
+        }
+        write++;
+      }
+    }
+  }
+
+  function countRemaining() {
+    let n = 0;
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (board[y][x]) n++;
+      }
+    }
+    return n;
+  }
+
+  function isGameOver() {
+    // 隣接する同色ペアが1つでもあれば続行可能
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const c = board[y][x];
+        if (!c) continue;
+        if (x + 1 < COLS && board[y][x+1] === c) return false;
+        if (y + 1 < ROWS && board[y+1][x] === c) return false;
+      }
+    }
+    return true;
+  }
+
+  function updateStatus() {
+    scoreEl.textContent = score;
+    remainingEl.textContent = countRemaining();
+    gameHiscoreEl.textContent = getHiscore();
+  }
+
+  function endGame() {
+    const remaining = countRemaining();
+    let bonus = 0;
+    if (remaining === 0) {
+      bonus = 1000;
+      score += bonus;
+    }
+    const prev = getHiscore();
+    const isNew = score > prev;
+    if (isNew) setHiscore(score);
+
+    resultTitleEl.textContent = remaining === 0 ? '★ パーフェクト! ★' : 'ゲーム終了';
+    resultTitleEl.style.color = remaining === 0 ? '#06d6a0' : '';
+    resultScoreEl.textContent = score;
+    resultNewEl.textContent = isNew ? '★ ハイスコア更新! ★' : '';
+    let detail = `のこり ${remaining}個`;
+    if (bonus) detail += `<br><b style="color:#06d6a0">全消しボーナス +${bonus}点!</b>`;
+    detail += `<br>ハイスコア: ${getHiscore()}`;
+    resultDetailEl.innerHTML = detail;
+
+    showScreen('result-screen');
+  }
+
+  function startGame() {
+    score = 0;
+    selectedGroup = null;
+    initBoard();
+    buildDom();
+    renderBoard();
+    updateStatus();
+    previewEl.textContent = '同じ色のかたまりをタップ';
+    showScreen('game-screen');
+  }
+
+  function updateTitleHiscore() {
+    titleHiscoreEl.textContent = getHiscore();
+  }
+
+  // ボタン
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (confirm('盤面をリセットしますか?')) startGame();
+  });
+  document.getElementById('quit-btn').addEventListener('click', endGame);
+  document.getElementById('again-btn').addEventListener('click', startGame);
+  document.getElementById('totitle-btn').addEventListener('click', () => {
+    updateTitleHiscore();
+    showScreen('title-screen');
+  });
+
+  updateTitleHiscore();
+})();
+</script>
+</body>
+</html>

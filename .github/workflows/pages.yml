@@ -18,7 +18,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
 
-          cp shooting-game/index.html /tmp/game_index.html
+          # 公開するファイルを /tmp/site にまとめる
+          mkdir -p /tmp/site
+          cp index.html /tmp/site/index.html
+          cp -r shooting-game /tmp/site/
+          cp -r samegame /tmp/site/
 
           if git ls-remote --exit-code origin gh-pages; then
             git checkout gh-pages
@@ -29,10 +33,10 @@ jobs:
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
           git rm -rf --cached . 2>/dev/null || true
 
-          cp /tmp/game_index.html index.html
+          cp -r /tmp/site/. .
           touch .nojekyll
 
-          git add index.html .nojekyll
+          git add -A
           if ! git diff --cached --quiet; then
             git commit -m "Deploy from main @ ${{ github.sha }}"
             git push origin gh-pages --force
